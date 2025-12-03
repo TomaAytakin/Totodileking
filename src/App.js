@@ -1,34 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp } from 'lucide-react';
+import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter } from 'lucide-react';
+import { Connection, PublicKey } from '@solana/web3.js';
 
-// Use a local constant for card price for now
-const LOCAL_CARD_PRICE = 55.50;
-const TOKEN_API_URL = 'https://api.dexscreener.com/latest/dex/tokens/E23qZatCvTpnxbwYuKQ7ZeGNwdiPe2cKzdojPjDpump';
+// Constants
+const CARD_PRICE_API_URL = 'https://get-totodile-price-155030518828.europe-west1.run.app';
+const TOKEN_ADDRESS = 'E23qZatCvTpnxbwYuKQ7ZeGNwdiPe2cKzdojPjDpump';
+const TREASURY_WALLET_ADDRESS = 'B8HKutRdaUN31dAkLAGksaqBtaJEvuDFUan3WbQn6fqj';
+const SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+
+const TOKEN_API_URL = `https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`;
 
 function App() {
   const [tokenPrice, setTokenPrice] = useState(null);
   const [treasuryValue, setTreasuryValue] = useState(0);
   const [buyingPower, setBuyingPower] = useState(0);
+  const [tokenBalance, setTokenBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(TOKEN_API_URL);
-      const data = await response.json();
+      // 1. Fetch Card Price
+      const cardPriceResponse = await fetch(CARD_PRICE_API_URL);
+      const cardPriceData = await cardPriceResponse.json();
 
-      if (data.pairs && data.pairs.length > 0) {
-        const price = parseFloat(data.pairs[0].priceUsd);
-        setTokenPrice(price);
-
-        const tValue = price * 1000000;
-        setTreasuryValue(tValue);
-
-        const bPower = tValue / LOCAL_CARD_PRICE;
-        setBuyingPower(bPower);
+      let cardPrice = 55.50; // Fallback
+      if (cardPriceData && cardPriceData.averageSellPrice) {
+         cardPrice = cardPriceData.averageSellPrice;
+      } else if (typeof cardPriceData === 'number') {
+         cardPrice = cardPriceData;
       }
+
+      // 2. Fetch Token Price from Dexscreener
+      const tokenResponse = await fetch(TOKEN_API_URL);
+      const tokenData = await tokenResponse.json();
+      let currentTokenPrice = 0;
+
+      if (tokenData.pairs && tokenData.pairs.length > 0) {
+        currentTokenPrice = parseFloat(tokenData.pairs[0].priceUsd);
+        setTokenPrice(currentTokenPrice);
+      }
+
+      // 3. Fetch Live Token Balance from Solana
+      const connection = new Connection(SOLANA_RPC_URL);
+      const treasuryPublicKey = new PublicKey(TREASURY_WALLET_ADDRESS);
+      const tokenMintPublicKey = new PublicKey(TOKEN_ADDRESS);
+
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(treasuryPublicKey, {
+        mint: tokenMintPublicKey,
+      });
+
+      let balance = 0;
+      if (tokenAccounts.value.length > 0) {
+        // Sum up balances if multiple accounts exist (unlikely for ATA but good practice)
+        for (const account of tokenAccounts.value) {
+           balance += account.account.data.parsed.info.tokenAmount.uiAmount;
+        }
+      }
+      setTokenBalance(balance);
+
+      // 4. Calculate Treasury Value and Buying Power
+      const tValue = currentTokenPrice * balance;
+      setTreasuryValue(tValue);
+
+      const bPower = tValue / cardPrice;
+      setBuyingPower(bPower);
+
     } catch (error) {
-      console.error("Error fetching token data:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -58,7 +97,7 @@ function App() {
         <div className="bg-gray-300 rounded-lg p-6 mb-6 shadow-inner border-4 border-gray-400 relative overflow-hidden">
 
           {/* Main Screen */}
-          <div className="bg-[#9ca04c] border-4 border-gray-500 rounded p-4 shadow-inner relative overflow-hidden h-64 flex flex-col justify-between">
+          <div className="bg-[#9ca04c] border-4 border-gray-500 rounded p-4 shadow-inner relative overflow-hidden flex flex-col justify-between min-h-[16rem]">
             {/* Scanlines Overlay */}
             <div className="absolute inset-0 scanlines opacity-30 pointer-events-none"></div>
 
@@ -78,6 +117,14 @@ function App() {
                       <span className="font-bold text-sm text-gray-800">PRICE:</span>
                     </div>
                     <span className="font-mono font-bold text-lg text-gray-900">${tokenPrice ? tokenPrice.toFixed(8) : '0.00'}</span>
+                  </div>
+
+                   <div className="flex justify-between items-center border-b border-gray-600 pb-1">
+                    <div className="flex items-center gap-2">
+                      <Coins size={18} className="text-gray-800" />
+                      <span className="font-bold text-sm text-gray-800">BALANCE:</span>
+                    </div>
+                    <span className="font-mono font-bold text-lg text-gray-900">{tokenBalance.toLocaleString()}</span>
                   </div>
 
                   <div className="flex justify-between items-center border-b border-gray-600 pb-1">
@@ -111,6 +158,17 @@ function App() {
                <div className="w-8 h-1 bg-gray-500 rounded"></div>
              </div>
           </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mb-6 flex justify-center">
+             <div className="bg-gray-800 rounded-lg p-3 text-white text-xs shadow-lg border border-gray-700 text-center">
+                All of this amount will be sent to{' '}
+                <a href="https://x.com/totodile_king" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-bold">
+                    @totodile_king
+                    <Twitter size={14} fill="currentColor" />
+                </a>
+             </div>
         </div>
 
         {/* Controls */}
