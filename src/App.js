@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock, Volume2, VolumeX } from 'lucide-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 
 // Constants
 const CARD_PRICE_API_URL = 'https://get-totodile-price-155030518828.europe-west1.run.app';
 const TOKEN_ADDRESS = 'E23qZatCvTpnxbwYuKQ7ZeGNwdiPe2cKzdojPjDpump';
-const TREASURY_WALLET_ADDRESS = 'B8HKutRdaUN31dAkLAGksaqBtaJEvuDFUan3WbQn6fqj';
+const TREASURY_WALLET_ADDRESS = '3xsMLdAWXGSRUExnktqsW1UaNurq19ceQGUY5NeWrsk6';
 const SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
 
 const TOKEN_API_URL = `https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`;
@@ -17,6 +17,8 @@ function App() {
   const [tokenBalance, setTokenBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(60);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -47,16 +49,14 @@ function App() {
       const treasuryPublicKey = new PublicKey(TREASURY_WALLET_ADDRESS);
       const tokenMintPublicKey = new PublicKey(TOKEN_ADDRESS);
 
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(treasuryPublicKey, {
-        mint: tokenMintPublicKey,
-      });
+      const accounts = await connection.getParsedTokenAccountsByOwner(
+        treasuryPublicKey,
+        { mint: tokenMintPublicKey }
+      );
 
       let balance = 0;
-      if (tokenAccounts.value.length > 0) {
-        // Sum up balances if multiple accounts exist (unlikely for ATA but good practice)
-        for (const account of tokenAccounts.value) {
-           balance += account.account.data.parsed.info.tokenAmount.uiAmount;
-        }
+      if (accounts.value.length > 0) {
+        balance = accounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
       }
       setTokenBalance(balance);
 
@@ -89,6 +89,20 @@ function App() {
 
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+        audioRef.current.volume = 0.5;
+        if (!isMuted) {
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => console.log("Autoplay blocked:", e));
+            }
+        } else {
+            audioRef.current.pause();
+        }
+    }
+  }, [isMuted]);
 
   // Format countdown as MM:SS (though it's only 60s max, so 00:XX)
   const formatTime = (seconds) => {
@@ -124,6 +138,11 @@ function App() {
             <div className="flex justify-between items-center z-10 text-gray-800 border-b border-gray-700 pb-1 mb-2">
               <span className="flex items-center gap-1 font-bold text-xs"><Wifi size={14} /> ONLINE</span>
               <span className="flex items-center gap-1 font-bold text-xs"><Battery size={14} /> 100%</span>
+            </div>
+
+            {/* Pokemon Card Image */}
+            <div className="flex justify-center z-10 mb-2">
+                <img src="/totodile-card.png" alt="Totodile Card" className="h-32 object-contain drop-shadow-md border-2 border-gray-600 rounded" />
             </div>
 
             <div className="z-10 flex-1 flex flex-col justify-center space-y-4">
@@ -201,6 +220,16 @@ function App() {
           </div>
 
           <div className="flex flex-col gap-3">
+            <div className="flex gap-4 justify-end">
+               {/* Sound Toggle */}
+               <button
+                 onClick={() => setIsMuted(!isMuted)}
+                 className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 shadow-md active:shadow-inner active:bg-gray-900 border-2 border-gray-700"
+               >
+                 {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+               </button>
+            </div>
+
             <div className="flex gap-4">
                <div className="w-12 h-3 bg-gray-800 rounded-full rotate-[-25deg] shadow-md"></div>
                <div className="w-12 h-3 bg-gray-800 rounded-full rotate-[-25deg] shadow-md"></div>
@@ -215,8 +244,8 @@ function App() {
 
           </div>
         </div>
-
       </div>
+      <audio ref={audioRef} src="/bg-music.mp3" loop />
     </div>
   );
 }
