@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock, Volume2, VolumeX, Copy, Check, Github } from 'lucide-react';
+import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock, Volume2, VolumeX, Copy, Check, Github, ExternalLink } from 'lucide-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 
 // Constants
@@ -19,6 +19,7 @@ function App() {
   const [countdown, setCountdown] = useState(60);
   const [isMuted, setIsMuted] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [cardUrl, setCardUrl] = useState('https://www.cardmarket.com/en/Pokemon/Products/Singles/Neo-Genesis/Totodile-V2-NG81');
   const audioRef = useRef(null);
 
   const copyToClipboard = () => {
@@ -35,10 +36,18 @@ function App() {
       const cardPriceData = await cardPriceResponse.json();
 
       let cardPrice = 55.50; // Fallback
-      if (cardPriceData && cardPriceData.averageSellPrice) {
+
+      // Upgrade: Handle new JSON structure { price, trendPrice, isLowPrice, url }
+      if (cardPriceData.price) {
+         cardPrice = cardPriceData.price;
+      } else if (cardPriceData.averageSellPrice) {
          cardPrice = cardPriceData.averageSellPrice;
       } else if (typeof cardPriceData === 'number') {
          cardPrice = cardPriceData;
+      }
+
+      if (cardPriceData.url) {
+          setCardUrl(cardPriceData.url);
       }
 
       // 2. Fetch Token Price from Dexscreener
@@ -183,6 +192,26 @@ function App() {
                     <span className="font-mono font-bold text-lg text-gray-900">${treasuryValue.toFixed(2)}</span>
                   </div>
 
+                  {/* Wallet Link */}
+                  <div className="flex justify-between items-center border-b border-gray-600 pb-1">
+                    <div className="flex items-center gap-2">
+                      {/* Using a generic icon or we could import Wallet if available. Using TrendingUp or generic circle for now, or just text.
+                          The user requested "Wallet Link: Make the TREASURY_WALLET_ADDRESS text clickable".
+                          I'll mimic the CA layout.
+                      */}
+                      <span className="font-bold text-sm text-gray-800">WALLET:</span>
+                    </div>
+                    <a
+                      href={`https://solscan.io/account/${TREASURY_WALLET_ADDRESS}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono font-bold text-sm text-gray-900 flex items-center gap-1 hover:text-blue-600"
+                    >
+                      {`${TREASURY_WALLET_ADDRESS.slice(0, 4)}...${TREASURY_WALLET_ADDRESS.slice(-4)}`}
+                      <ExternalLink size={14} />
+                    </a>
+                  </div>
+
                   <div className="flex justify-between items-center border-b border-gray-600 pb-1">
                     <div className="flex items-center gap-2">
                       <div className="relative">
@@ -209,6 +238,13 @@ function App() {
                     <span className="font-mono font-bold text-lg text-gray-900">{buyingPower.toFixed(2)} CARDS</span>
                   </div>
 
+                  {/* Price Source Link */}
+                  <div className="text-center mt-1">
+                     <a href={cardUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-600 hover:text-blue-600 flex items-center justify-center gap-1 font-bold">
+                        Source: Cardmarket <ExternalLink size={10} />
+                     </a>
+                  </div>
+
                   <div className="text-center mt-2 text-xs font-bold text-gray-700">
                     Ref: Totodile (Neo Genesis)
                   </div>
@@ -226,11 +262,11 @@ function App() {
           </div>
         </div>
 
-        {/* Footer Info */}
+        {/* Footer Info - Updated Subheading */}
         <div className="mb-6 flex justify-center">
              <div className="bg-gray-800 rounded-lg p-3 text-white text-xs shadow-lg border border-gray-700 text-center">
-                All of this amount will be sent to{' '}
-                <a href="https://x.com/totodile_king" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-bold">
+                We the cryptobros gotchu bro
+                <a href="https://x.com/totodile_king" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-bold ml-1">
                     @totodile_king
                     <Twitter size={14} fill="currentColor" />
                 </a>

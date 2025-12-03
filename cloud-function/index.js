@@ -29,55 +29,64 @@ functions.http('getPrice', async (req, res) => {
     const html = response.data;
     const $ = cheerio.load(html);
 
-    // Finding the price. This selector might need adjustment based on the actual page structure.
-    // Usually, Cardmarket price guide is in a table or a specific div.
-    // Looking for "Price Trend" or lowest price.
-    // Common selector for price trend on Cardmarket:
-    // .price-container .price-value or looking for "Price Trend" label
+    // Logic Update: Find "Available from" (Lowest Price)
+    // Selector: dt:contains("Available from") + dd
 
-    // Let's try to find the "Price Trend"
-    // The structure often is dt:contains("Price Trend") -> dd > span
+    let lowestPriceText = '';
+    const availableFromLabel = $('dt').filter((i, el) => $(el).text().includes('Available from'));
+    if (availableFromLabel.length > 0) {
+        lowestPriceText = availableFromLabel.next('dd').text();
+    }
 
-    let priceText = '';
-
-    // Strategy 1: Look for the price trend
+    // Keep existing logic for Trend Price as reference
+    let trendPriceText = '';
     const priceTrendLabel = $('dt').filter((i, el) => $(el).text().includes('Price Trend'));
     if (priceTrendLabel.length > 0) {
-        priceText = priceTrendLabel.next('dd').find('span').text();
+        trendPriceText = priceTrendLabel.next('dd').find('span').text();
     }
 
-    // Strategy 2: If failed, try to find any price on the page
-    if (!priceText) {
-        // Fallback or specific selector if known.
-        // Let's assume for this exercise we can find it.
-        // If we can't find it, we might mock it or return null.
+    // Helper to parse price
+    const parsePrice = (text) => {
+        if (!text) return null;
+        // Clean the price string (e.g., "55,50 €")
+        // Replace comma with dot, remove currency symbol
+        const cleanString = text.replace('€', '').replace(',', '.').trim();
+        const val = parseFloat(cleanString);
+        return isNaN(val) ? null : val;
+    };
 
-        // Sometimes it is in table.
-        // .table-body-row .price-container
-    }
+    const lowestPrice = parsePrice(lowestPriceText);
+    const trendPrice = parsePrice(trendPriceText);
 
-    // Clean the price string (e.g., "55,50 €")
-    // Replace comma with dot, remove currency symbol
-    let price = 0;
-    if (priceText) {
-        const cleanString = priceText.replace('€', '').replace(',', '.').trim();
-        price = parseFloat(cleanString);
+    // Determine final price (Use Lowest if found, else Trend)
+    let finalPrice = 55.50; // default fallback
+    let isLowPrice = false;
+
+    if (lowestPrice !== null) {
+        finalPrice = lowestPrice;
+        isLowPrice = true;
+    } else if (trendPrice !== null) {
+        finalPrice = trendPrice;
     } else {
-        // Fallback for the assignment if scraping fails due to bot protection
-        price = 55.50;
         console.log("Could not scrape price, using default.");
     }
 
-    // If we managed to parse it but it is NaN (maybe different format)
-    if (isNaN(price)) {
-        price = 55.50;
-    }
-
-    res.status(200).json({ price: price });
+    res.status(200).json({
+        price: finalPrice,
+        trendPrice: trendPrice !== null ? trendPrice : 0,
+        isLowPrice: isLowPrice, // Boolean to track which one we found
+        url: url
+    });
 
   } catch (error) {
     console.error('Error fetching price:', error);
     // In case of error, return the default price as per requirements or error
-    res.status(200).json({ price: 55.50, error: 'Failed to scrape, using fallback' });
+    res.status(200).json({
+        price: 55.50,
+        trendPrice: 0,
+        isLowPrice: false,
+        url: 'https://www.cardmarket.com/en/Pokemon/Products/Singles/Neo-Genesis/Totodile-V2-NG81',
+        error: 'Failed to scrape, using fallback'
+    });
   }
 });
