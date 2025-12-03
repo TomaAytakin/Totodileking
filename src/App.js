@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock, Volume2, VolumeX } from 'lucide-react';
+import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock, Volume2, VolumeX, Copy, Check, Github } from 'lucide-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 
 // Constants
@@ -18,7 +18,14 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(60);
   const [isMuted, setIsMuted] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const audioRef = useRef(null);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(TOKEN_ADDRESS);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -53,6 +60,8 @@ function App() {
         treasuryPublicKey,
         { mint: tokenMintPublicKey }
       );
+
+      console.log('Mint:', TOKEN_ADDRESS, 'Found accounts:', accounts.value.length);
 
       let balance = 0;
       if (accounts.value.length > 0) {
@@ -112,7 +121,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-4 gap-8">
       {/* Pokedex / Gameboy Container */}
       <div className="relative w-full max-w-md bg-red-600 rounded-b-xl rounded-t-lg shadow-2xl p-6 border-b-8 border-r-8 border-red-800">
 
@@ -172,6 +181,24 @@ function App() {
                       <span className="font-bold text-sm text-gray-800">TREASURY:</span>
                     </div>
                     <span className="font-mono font-bold text-lg text-gray-900">${treasuryValue.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-600 pb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <button
+                          onClick={copyToClipboard}
+                          className="hover:text-gray-600 transition-colors"
+                          title="Copy Address"
+                        >
+                          {isCopied ? <Check size={18} className="text-green-600" /> : <Copy size={18} className="text-gray-800" />}
+                        </button>
+                      </div>
+                      <span className="font-bold text-sm text-gray-800">CA:</span>
+                    </div>
+                    <span className="font-mono font-bold text-sm text-gray-900 flex items-center gap-1">
+                      {`${TOKEN_ADDRESS.slice(0, 4)}...${TOKEN_ADDRESS.slice(-4)}`}
+                    </span>
                   </div>
 
                   <div className="flex justify-between items-center">
@@ -245,6 +272,21 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Footer Links */}
+      <div className="flex gap-4">
+          <a href="https://x.com/i/communities/1996002744012845255" target="_blank" rel="noopener noreferrer"
+             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+             <Twitter size={20} />
+             <span className="font-bold">Join the Community</span>
+          </a>
+          <a href="https://github.com/TomaAytakin/Totodileking" target="_blank" rel="noopener noreferrer"
+             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+             <Github size={20} />
+             <span className="font-bold">Source Code</span>
+          </a>
+      </div>
+
       <audio ref={audioRef} src="/bg-music.mp3" loop />
     </div>
   );

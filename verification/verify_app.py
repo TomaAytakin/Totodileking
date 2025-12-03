@@ -1,47 +1,38 @@
 from playwright.sync_api import sync_playwright
 
-def verify_app():
+def verify_totodex():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         try:
-            # Wait for the app to start
-            page.goto("http://localhost:3000", timeout=60000)
+            # Navigate to the app (assuming default port 3000)
+            page.goto("http://localhost:3000")
 
-            # Wait for "Totodex" header to ensure app loaded
-            page.wait_for_selector("text=Totodex", timeout=30000)
+            # Wait for the "Totodex" title to appear to ensure app loaded
+            page.wait_for_selector("text=Totodex")
 
-            # Check for the image
-            img = page.locator("img[src='/totodile-card.png']")
-            if img.is_visible():
-                print("Totodile card image is visible")
-            else:
-                print("Totodile card image is NOT visible")
+            # Check if the Token Address is displayed and truncated
+            # The address starts with E23q and ends with pump
+            # We displayed it as E23q...pump
+            page.wait_for_selector("text=E23q...pump")
 
-            # Check for the audio element
-            audio = page.locator("audio[src='/bg-music.mp3']")
-            if audio.count() > 0:
-                print("Audio element found")
-                # Check if it's not muted (based on React state passed to button or just checking element props if possible)
-                # Since we can't easily check internal React state, we check the UI button
+            # Check for Footer Links
+            page.wait_for_selector("text=Join the Community")
+            page.wait_for_selector("text=Source Code")
 
-                # Check for Mute/Unmute button
-                # Initial state is NOT muted, so we expect Volume2 icon (which means sound is ON)
-                # But wait, the icons are SVGs. Let's check for the button existence.
-                button = page.locator("button")
-                if button.is_visible():
-                    print("Sound toggle button is visible")
-            else:
-                print("Audio element NOT found")
-
-            # Take screenshot
-            page.screenshot(path="verification/app_screenshot.png")
-            print("Screenshot taken")
+            # Take a screenshot
+            page.screenshot(path="verification/totodex_screenshot.png", full_page=True)
+            print("Screenshot taken successfully.")
 
         except Exception as e:
             print(f"Error: {e}")
+            # Take screenshot anyway if possible to debug
+            try:
+                page.screenshot(path="verification/error_screenshot.png")
+            except:
+                pass
         finally:
             browser.close()
 
 if __name__ == "__main__":
-    verify_app()
+    verify_totodex()
