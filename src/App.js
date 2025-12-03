@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { RefreshCcw, Wifi, Battery, Calculator, Coins, TrendingUp, Twitter, Clock } from 'lucide-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 
 // Constants
@@ -16,8 +16,9 @@ function App() {
   const [buyingPower, setBuyingPower] = useState(0);
   const [tokenBalance, setTokenBalance] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(60);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // 1. Fetch Card Price
@@ -71,11 +72,30 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          fetchData();
+          return 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // Format countdown as MM:SS (though it's only 60s max, so 00:XX)
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
@@ -185,13 +205,14 @@ function App() {
                <div className="w-12 h-3 bg-gray-800 rounded-full rotate-[-25deg] shadow-md"></div>
                <div className="w-12 h-3 bg-gray-800 rounded-full rotate-[-25deg] shadow-md"></div>
             </div>
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-full shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 transition-all flex items-center gap-2 text-sm"
-            >
-              <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} /> REFRESH
-            </button>
+
+            {/* Countdown Timer Display */}
+            <div className="bg-black/80 text-green-500 font-mono py-2 px-4 rounded-lg shadow-inner border border-gray-700 flex items-center gap-2 text-sm">
+                <Clock size={16} className="text-green-500 animate-pulse" />
+                <span>NEXT UPDATE:</span>
+                <span className="font-bold">{formatTime(countdown)}</span>
+            </div>
+
           </div>
         </div>
 
