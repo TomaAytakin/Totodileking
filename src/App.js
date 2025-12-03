@@ -6,7 +6,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 const CARD_PRICE_API_URL = 'https://get-totodile-price-155030518828.europe-west1.run.app';
 const TOKEN_ADDRESS = 'E23qZatCvTpnxbwYuKQ7ZeGNwdiPe2cKzdojPjDpump';
 const TREASURY_WALLET_ADDRESS = '3xsMLdAWXGSRUExnktqsW1UaNurq19ceQGUY5NeWrsk6';
-const SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+const SOLANA_RPC_URL = 'https://solana-rpc.publicnode.com';
 
 const TOKEN_API_URL = `https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`;
 
