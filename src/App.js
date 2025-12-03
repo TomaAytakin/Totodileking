@@ -241,7 +241,7 @@ function App() {
                   {/* Price Source Link */}
                   <div className="text-center mt-1">
                      <a href={cardUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-600 hover:text-blue-600 flex items-center justify-center gap-1 font-bold">
-                        Source: Cardmarket <ExternalLink size={10} />
+                        Source: PriceCharting <ExternalLink size={10} />
                      </a>
                   </div>
 
