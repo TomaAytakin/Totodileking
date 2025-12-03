@@ -7,3 +7,16 @@ import '@testing-library/jest-dom';
 const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+// Mock HTMLMediaElement.prototype.play and pause
+Object.defineProperty(global.window.HTMLMediaElement.prototype, 'play', {
+  configurable: true,
+  writable: true,
+  value: jest.fn().mockImplementation(() => Promise.resolve()),
+});
+
+Object.defineProperty(global.window.HTMLMediaElement.prototype, 'pause', {
+  configurable: true,
+  writable: true,
+  value: jest.fn(),
+});
